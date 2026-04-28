@@ -75,6 +75,7 @@ import {
   orchestrationSnapshotRouteLayer,
 } from "./orchestration/http.ts";
 import { NetService } from "@t3tools/shared/Net";
+import { ensureTailscaleServe } from "@t3tools/tailscale";
 
 const PtyAdapterLive = Layer.unwrap(
   Effect.gen(function* () {
@@ -296,6 +297,29 @@ export const makeServerLayer = Layer.unwrap(
         () => clearPersistedServerRuntimeState(config.serverRuntimeStatePath),
       ),
     );
+    const tailscaleServeLayer = config.tailscaleServeEnabled
+      ? Layer.effectDiscard(
+          ensureTailscaleServe({
+            localPort: config.port,
+            servePort: config.tailscaleServePort,
+            localHost: "127.0.0.1",
+          }).pipe(
+            Effect.tap(() =>
+              Effect.logInfo("Tailscale Serve configured", {
+                localPort: config.port,
+                servePort: config.tailscaleServePort,
+              }),
+            ),
+            Effect.catch((cause) =>
+              Effect.logWarning("Failed to configure Tailscale Serve", {
+                cause,
+                localPort: config.port,
+                servePort: config.tailscaleServePort,
+              }),
+            ),
+          ),
+        )
+      : Layer.empty;
 
     const serverApplicationLayer = Layer.mergeAll(
       HttpRouter.serve(makeRoutesLayer, {
@@ -303,6 +327,7 @@ export const makeServerLayer = Layer.unwrap(
       }),
       httpListeningLayer,
       runtimeStateLayer,
+      tailscaleServeLayer,
     );
 
     return serverApplicationLayer.pipe(
