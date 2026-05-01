@@ -204,9 +204,9 @@ interface PendingSshPasswordPrompt {
 }
 
 function isSshPasswordPromptCancellation(error: unknown): error is SshPasswordPromptError {
-  return (
-    error instanceof SshPasswordPromptError && error.message.toLowerCase().includes("cancelled")
-  );
+  if (!(error instanceof SshPasswordPromptError)) return false;
+  const msg = error.message.toLowerCase();
+  return msg.includes("cancelled") || msg.includes("timed out");
 }
 
 /**
