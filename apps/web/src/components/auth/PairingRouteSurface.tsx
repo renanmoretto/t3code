@@ -172,7 +172,7 @@ export function HostedPairingRouteSurface() {
       : "This pairing link is missing its backend host or token.",
   );
   const submitAttemptedRef = useRef(false);
-  const tokenSubmittedRef = useRef(false);
+  const [tokenSubmitted, setTokenSubmitted] = useState(false);
 
   const submitHostedPairingRequest = useCallback(async () => {
     const request = hostedPairingRequestRef.current;
@@ -183,7 +183,7 @@ export function HostedPairingRouteSurface() {
       return;
     }
 
-    if (tokenSubmittedRef.current) {
+    if (tokenSubmitted) {
       setStatus("error");
       setMessage("This one-time pairing token was already submitted. Request a new pairing link.");
       return;
@@ -191,7 +191,7 @@ export function HostedPairingRouteSurface() {
 
     setStatus("pairing");
     setMessage("Connecting to this backend.");
-    tokenSubmittedRef.current = true;
+    setTokenSubmitted(true);
 
     try {
       const record = await addSavedEnvironment({
@@ -202,13 +202,13 @@ export function HostedPairingRouteSurface() {
       setStatus("paired");
       setMessage(`${record.label} is saved in this browser.`);
     } catch (error) {
-      tokenSubmittedRef.current = false;
+      setTokenSubmitted(false);
       setStatus("error");
       setMessage(
         `${errorMessageFromUnknown(error)} If the backend accepted this one-time token, request a new pairing link before retrying.`,
       );
     }
-  }, []);
+  }, [tokenSubmitted]);
 
   useEffect(() => {
     if (submitAttemptedRef.current) {
@@ -261,7 +261,7 @@ export function HostedPairingRouteSurface() {
             <Button disabled size="sm">
               Pairing...
             </Button>
-          ) : !tokenSubmittedRef.current ? (
+          ) : !tokenSubmitted ? (
             <Button size="sm" onClick={() => void submitHostedPairingRequest()}>
               Try again
             </Button>
