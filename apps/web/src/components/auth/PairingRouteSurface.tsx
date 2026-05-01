@@ -195,7 +195,7 @@ export function HostedPairingRouteSurface() {
 
     try {
       const record = await addSavedEnvironment({
-        label: request.label,
+        label: request.label || request.host,
         host: request.host,
         pairingCode: request.token,
       });
